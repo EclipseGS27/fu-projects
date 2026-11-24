@@ -40,7 +40,7 @@ async function execute(op, p, userId) {
 		if (!fn) return { ok: false, message: `Unknown action "${op}".` };
 		if (GM_ONLY.has(op) && !user?.isGM) return { ok: false, message: 'Only the GM can do that.' };
 		// players act for their own characters
-		for (const key of ['actor', 'source', 'owner']) {
+		for (const key of ['actor', 'source', 'owner', 'inventor']) {
 			const uuid = p[key];
 			if (!uuid || uuid === 'party' || user?.isGM) continue;
 			const a = fromUuidSync(uuid);

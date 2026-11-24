@@ -1,5 +1,5 @@
 import { esc, money, myCharacters, num, skillLevel, sync, activeParty, classLevel } from './util.mjs';
-import { AREA, AREA_HINT, POTENCY, POTENCY_HINT, USES } from './model.mjs';
+import { AREA, AREA_HINT, POTENCY, POTENCY_HINT, USES, merchantDiscount } from './model.mjs';
 import { run } from './rpc.mjs';
 
 const { ApplicationV2 } = foundry.applications.api;
@@ -63,11 +63,12 @@ export class ProjectWizard extends ApplicationV2 {
 			const base = POTENCY[fd.potency] * AREA[fd.area] * USES[fd.use] * (fd.flawed ? 0.75 : 1);
 			const inv = sync(fd.inventor);
 			const vision = skillLevel(inv, 'visionary');
-			const cost = Math.max(0, base - vision * 100);
+			const merch = Math.round(Math.max(0, base - vision * 100) * merchantDiscount());
+			const cost = Math.max(0, base - vision * 100 - merch);
 			const progress = Math.max(1, Math.floor(base / 100));
 			const perDay = 1 + (classLevel(inv, 'tinkerer') ? 1 : 0) + vision + num(fd.helpers);
 			const helperFee = num(fd.helpers) * Math.ceil(base / 2);
-			form.querySelector('.sum').innerHTML = `<div><span>Material cost</span><b>${money(cost)}</b>${vision ? `<small>Visionary −${money(vision * 100)}</small>` : ''}</div>
+			form.querySelector('.sum').innerHTML = `<div><span>Material cost</span><b>${money(cost)}</b>${vision ? `<small>Visionary −${money(vision * 100)}</small>` : ''}${merch ? `<small>Merchant −${money(merch)}</small>` : ''}</div>
 				<div><span>Progress needed</span><b>${progress}</b></div>
 				<div><span>With the inventor alone</span><b>${perDay}/day</b><small>≈ ${Math.ceil(progress / perDay)} day${Math.ceil(progress / perDay) > 1 ? 's' : ''}; every other character working adds 1, Tinkerers 2</small></div>
 				${helperFee ? `<div><span>Helpers' pay</span><b>${money(helperFee)}</b><small>half the cost each, paid when hired</small></div>` : ''}

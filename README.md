@@ -20,13 +20,14 @@ Open it with the wrench button in the token controls, or **Projects & Downtime**
 - **Special material**: drop it on the card (it is used up), or the GM marks it found.
 - **Helpers**: hire them (half the cost each), the GM can add free ones, or dismiss them.
 - **Today**: each player clicks their characters onto the project they work on today; a character works on one project a day.
-- **End the day** (GM): every project advances by the rules: +1 per character who worked on it, +1 more per Tinkerer, +1 per helper, plus the inventor's Visionary level. Deadlines count down, a summary goes to chat, and finished projects create their item.
+- **End the day** (GM): every project advances by the rules: +1 per character who worked on it, +1 more per Tinkerer, +1 per helper, plus the Visionary level of every character with that Skill who worked (it adds up). Deadlines count down every day, worked on or not, a summary goes to chat, and finished projects create their item.
 - **Complications** (GM button, or on a fumbled work check): setback, price hike, lost day, missing part (work stops until resolved), unwanted attention, happy accident. Mark them resolved when the party deals with them.
 - **Clock on the scene**: with Fabula Ultima Battle UI, the GM can show a project as a scene clock that fills as it progresses.
 - Each card has a log of payments, work and events.
 
 ## Tinkerer and Merchant
-- Tinkerers working on a project add the extra progress automatically, and the inventor's **Visionary** level lowers the cost and adds progress (Project FU computes the discount).
+- Tinkerers working on a project add the extra progress automatically. The inventor's **Visionary** level lowers the cost (Project FU computes the discount), and every Visionary who works adds their level in progress.
+- Players spend materials from their own inventory; the GM can also drop sidebar or compendium items, hire free helpers, and change deadlines and blocks.
 - **Merchant in the party** (homebrew world setting, 10% by default): materials cost less.
 
 ## Settings

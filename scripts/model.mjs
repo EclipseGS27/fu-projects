@@ -72,13 +72,16 @@ export function owed(item) {
 
 export const progressOf = (item) => ({ current: num(item.system?.progress?.current), max: Math.max(1, num(item.system?.progress?.max, 1)) });
 
-/** The core rule: +1 per character working today, +1 more for each Tinkerer among them, +1 per helper, plus Visionary */
+/**
+ * The core rule: +1 per character working today, +1 more for each Tinkerer among them, +1 per helper,
+ * plus Visionary: (SL) more for every character with the Skill who works that day (cumulative).
+ */
 export function dailyProgress(item, workers = data(item).workers) {
 	const d = data(item);
 	const actors = workers.map(sync).filter(Boolean);
 	const tinkerers = actors.filter((a) => classLevel(a, 'tinkerer') > 0).length;
 	const inventor = sync(d.inventor) ?? item.parent;
-	const vision = actors.includes(inventor) ? Math.max(num(item.system?.lvlVision?.value), skillLevel(inventor, 'visionary')) : 0;
+	const vision = actors.reduce((s, a) => s + (a === inventor ? Math.max(num(item.system?.lvlVision?.value), skillLevel(a, 'visionary')) : skillLevel(a, 'visionary')), 0);
 	return { total: actors.length + tinkerers + num(d.helpers) + vision, workers: actors.length, tinkerers, helpers: num(d.helpers), vision };
 }
 
@@ -146,11 +149,12 @@ export const OPS = {
 		return ok(`${money(amount)} paid.`);
 	},
 
-	async hireHelpers(p, item) {
+	async hireHelpers(p, item, user) {
 		const d = data(item);
 		const n = Math.max(0, num(p.count));
 		const extra = Math.max(0, n - num(d.helpers));
-		const free = !!p.free;
+		// only the GM decides that someone helps for free
+		const free = !!p.free && !!user?.isGM;
 		if (extra && !free) {
 			const who = await payer(p.source, item);
 			const fee = Math.ceil(costOf(item) / 2) * extra;
@@ -164,9 +168,12 @@ export const OPS = {
 		return ok('Helpers updated.');
 	},
 
-	async material(p, item) {
+	async material(p, item, user) {
 		const d = data(item);
 		const src = p.uuid ? await fromUuid(p.uuid) : null;
+		// players spend items they carry; sidebar and compendium items (never used up) are for the GM
+		if (!user?.isGM && src && !src.parent) return fail('Drop an item from your character\'s inventory.');
+		if (!user?.isGM && p.special && p.have && !src) return fail('Drop the special material from your inventory, or ask the GM.');
 		if (p.special) {
 			d.special.have = !!p.have;
 			if (src) d.special.item = src.name;
@@ -210,11 +217,17 @@ export const OPS = {
 		return ok(on ? `${actor.name} works on ${item.name} today.` : `${actor.name} takes the day off.`);
 	},
 
-	async update(p, item) {
+	async update(p, item, user) {
 		const d = data(item);
-		for (const k of ['resultTo', 'deadline', 'blocked']) if (k in p) d[k] = p[k];
+		// players choose what they are building and who gets it; deadlines, blocks and materials are the GM's call
+		const gm = !!user?.isGM;
+		if (!gm && !item.parent?.testUserPermission(user, 'OWNER') && !sync(d.inventor)?.testUserPermission(user, 'OWNER')) return fail('Only the inventor can change this project.');
+		if ('resultTo' in p) d.resultTo = p.resultTo;
 		if ('result' in p) d.result = p.result;
-		if ('special' in p) d.special.needed = p.special;
+		if (gm) {
+			for (const k of ['deadline', 'blocked']) if (k in p) d[k] = p[k];
+			if ('special' in p) d.special.needed = p.special;
+		}
 		await setData(item, d);
 		return ok('Saved.');
 	},
@@ -305,13 +318,23 @@ async function endDay() {
 		const st = status(item);
 		if (st.id === 'done') continue;
 		const working = d.workers.map(sync).filter(Boolean);
-		if (!working.length && !num(d.helpers)) continue;
-		if (d.deadline > 0) d.deadline = Math.max(0, d.deadline - 1);
+		// the day passes for every project, worked on or not
+		const hadDeadline = d.deadline > 0;
+		if (hadDeadline) d.deadline = Math.max(0, d.deadline - 1);
+		const lateNote = hadDeadline && d.deadline === 0 ? ' · <b>deadline reached</b>' : '';
+		if (!working.length && !num(d.helpers)) {
+			if (st.id === 'skip') d.skip = Math.max(0, d.skip - 1);
+			if (hadDeadline) {
+				await setData(item, d);
+				lines.push(`<li><b>${esc(item.name)}</b>: nobody worked on it${d.deadline ? ` · ${d.deadline} day${d.deadline > 1 ? 's' : ''} left` : lateNote}</li>`);
+			} else if (st.id === 'skip') await setData(item, d);
+			continue;
+		}
 		if (st.id !== 'ready') {
 			if (st.id === 'skip') d.skip = Math.max(0, d.skip - 1);
 			d.workers = [];
 			await setData(item, d);
-			lines.push(`<li><b>${esc(item.name)}</b>: no progress (${esc(st.label)})</li>`);
+			lines.push(`<li><b>${esc(item.name)}</b>: no progress (${esc(st.label)})${lateNote}</li>`);
 			continue;
 		}
 		const dp = dailyProgress(item);
@@ -344,7 +367,7 @@ async function endDay() {
 		fresh.log = fresh.log.slice(0, 40);
 		await setData(item, fresh);
 		await syncClock(item);
-		lines.push(`<li><b>${esc(item.name)}</b>: +${gain} → ${now}/${pr.max}${notes.length ? ` <small>(${esc(notes.join(', '))})</small>` : ''}${d.deadline ? ` · ${d.deadline} day${d.deadline > 1 ? 's' : ''} left` : ''}</li>`);
+		lines.push(`<li><b>${esc(item.name)}</b>: +${gain} → ${now}/${pr.max}${notes.length ? ` <small>(${esc(notes.join(', '))})</small>` : ''}${d.deadline ? ` · ${d.deadline} day${d.deadline > 1 ? 's' : ''} left` : now >= pr.max ? '' : lateNote}</li>`);
 		if (now >= pr.max) await complete(item);
 	}
 	const acts = Object.entries(dt.activities)
