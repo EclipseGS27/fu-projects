@@ -412,7 +412,9 @@ async function complete(item) {
 	d.workers = [];
 	d.log.unshift({ t: Date.now(), text: made ? `Complete: ${made.name} given to ${to.name}` : 'Complete' });
 	await setData(item, d);
-	await syncClock(item);
+	// a finished project no longer needs its scene clock (it would sit full on the battle screen)
+	await syncClock(item, true);
+	await setData(item, { ...data(item), clockScene: null });
 	postChat(`<h3><i class="fa-solid fa-screwdriver-wrench"></i> ${esc(item.name)} is complete!</h3>${made ? `<p>${esc(made.name)} is now with ${esc(to.name)}.</p>` : ''}`);
 	return ok('Complete.');
 }
