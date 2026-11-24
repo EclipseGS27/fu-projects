@@ -91,3 +91,4 @@
 .fupj-wiz .result span { color: var(--ink); flex: 1; }
 .fupj-chat h3 { margin: 0 0 4px; }
 .fupj-chat ul { margin: 0; padding-left: 18px; }
+.fupj .proj.st-done .drop { display: none; }

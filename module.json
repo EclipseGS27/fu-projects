@@ -2,7 +2,7 @@
   "id": "fu-projects",
   "title": "Fabula Ultima Projects & Downtime",
   "description": "Projects and downtime for Project FU: a project wizard with the potency, area and uses costs, payment and materials, special materials, helpers, a shared downtime dashboard where players pick what their characters do each day, automatic daily progress by the rules (Tinkerers, helpers, Visionary), deadlines, complications, Battle UI scene clocks, and the finished item created on completion.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "authors": [
     {
       "name": "George Sowidan"
@@ -39,6 +39,6 @@
   "socket": true,
   "url": "https://github.com/EclipseGS27/fu-projects",
   "manifest": "https://raw.githubusercontent.com/EclipseGS27/fu-projects/main/module.json",
-  "download": "https://github.com/EclipseGS27/fu-projects/releases/download/v0.1.1/fu-projects.zip",
+  "download": "https://github.com/EclipseGS27/fu-projects/releases/download/v0.1.2/fu-projects.zip",
   "bugs": "https://github.com/EclipseGS27/fu-projects/issues"
 }
